@@ -191,6 +191,20 @@ const ReelItemVideo: React.FC<ReelItemVideoProps> = ({
   );
 };
 
+interface FeedPostItem extends Post {
+  feedInstanceId: string;
+}
+
+const shuffleArray = <T,>(arr: T[]): T[] => {
+  if (arr.length <= 1) return [...arr];
+  const result = [...arr];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+};
+
 export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
   posts,
   onSelectPost,
@@ -221,14 +235,74 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
   const viewedPostsRef = useRef<Set<string>>(new Set());
   const preloadedUrlsRef = useRef<Set<string>>(new Set());
 
+  // Infinite randomized feed items (keeps looping randomly forever)
+  const [feedItems, setFeedItems] = useState<FeedPostItem[]>([]);
+  const batchCountRef = useRef(0);
+
+  // Initialize infinite randomized feed whenever source posts or filters change
+  useEffect(() => {
+    if (!posts || posts.length === 0) {
+      setFeedItems([]);
+      batchCountRef.current = 0;
+      setActiveIndex(0);
+      return;
+    }
+
+    batchCountRef.current = 0;
+    setActiveIndex(0);
+
+    // Initial sequence: First pass preserves current order (e.g. pinned welcome reel or natural sort)
+    const initialItems: FeedPostItem[] = posts.map((p, idx) => ({
+      ...p,
+      feedInstanceId: `${p.id}__b0_${idx}`,
+    }));
+
+    // Preload randomized passes so the feed is instantly deep and seamless
+    let currentBatch = 1;
+    while (initialItems.length < Math.max(20, posts.length * 2) && posts.length > 0 && currentBatch <= 4) {
+      const shuffled = shuffleArray(posts);
+      shuffled.forEach((p, idx) => {
+        initialItems.push({
+          ...p,
+          feedInstanceId: `${p.id}__b${currentBatch}_${idx}`,
+        });
+      });
+      currentBatch++;
+    }
+    batchCountRef.current = currentBatch;
+    setFeedItems(initialItems);
+
+    if (containerRef.current) {
+      containerRef.current.scrollTop = 0;
+    }
+  }, [posts]);
+
+  // Dynamically append more randomized batches as the user approaches the end of the feed (never ends!)
+  useEffect(() => {
+    if (!posts || posts.length === 0 || feedItems.length === 0) return;
+
+    if (activeIndex >= feedItems.length - 4) {
+      const currentBatch = batchCountRef.current + 1;
+      batchCountRef.current = currentBatch;
+
+      const shuffled = shuffleArray(posts);
+      const nextBatch: FeedPostItem[] = shuffled.map((p, idx) => ({
+        ...p,
+        feedInstanceId: `${p.id}__b${currentBatch}_${idx}`,
+      }));
+
+      setFeedItems((prev) => [...prev, ...nextBatch]);
+    }
+  }, [activeIndex, posts, feedItems.length]);
+
   // Aggressively preload upcoming images in a sliding window (current - 1 to current + 4)
   useEffect(() => {
-    if (!posts || posts.length === 0) return;
+    if (!feedItems || feedItems.length === 0) return;
     const startIndex = Math.max(0, activeIndex - 1);
-    const endIndex = Math.min(posts.length - 1, activeIndex + 4);
+    const endIndex = Math.min(feedItems.length - 1, activeIndex + 4);
 
     for (let i = startIndex; i <= endIndex; i++) {
-      const p = posts[i];
+      const p = feedItems[i];
       if (!p) continue;
       const urls: string[] = [];
       if (p.imageUrl) urls.push(getReelPosterUrl(p.imageUrl));
@@ -246,7 +320,7 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
         }
       });
     }
-  }, [activeIndex, posts]);
+  }, [activeIndex, feedItems]);
 
   // Track active slide with IntersectionObserver
   useEffect(() => {
@@ -272,7 +346,7 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
                 }
               });
 
-              const post = posts[idx];
+              const post = feedItems[idx];
               if (post && !viewedPostsRef.current.has(post.id)) {
                 viewedPostsRef.current.add(post.id);
                 if (!post.id.startsWith('itinerary_')) {
@@ -295,7 +369,7 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
     return () => {
       observer.disconnect();
     };
-  }, [posts, trackInteraction]);
+  }, [feedItems, trackInteraction]);
 
   // Pause any background video whenever activeIndex changes
   useEffect(() => {
@@ -319,7 +393,7 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
 
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        scrollToIndex(Math.min(posts.length - 1, activeIndex + 1));
+        scrollToIndex(Math.min(feedItems.length - 1, activeIndex + 1));
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         scrollToIndex(Math.max(0, activeIndex - 1));
@@ -331,7 +405,7 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeIndex, posts.length]);
+  }, [activeIndex, feedItems.length]);
 
   const scrollToIndex = useCallback((index: number) => {
     const container = containerRef.current;
@@ -484,7 +558,7 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
   }
 
   return (
-    <div className="reel-container-9-16 relative w-full sm:w-auto h-[calc(100dvh-56px)] sm:h-[calc(100dvh-76px)] sm:max-h-[860px] sm:aspect-[9/16] max-w-full mx-auto bg-black rounded-none sm:rounded-3xl overflow-hidden shadow-2xl select-none ring-1 ring-white/10">
+    <div className="reel-container-9-16 relative w-full sm:w-auto h-[calc(100dvh-53px)] sm:h-[calc(100dvh-76px)] sm:max-h-[860px] sm:aspect-[9/16] max-w-full mx-auto bg-black rounded-none sm:rounded-3xl overflow-hidden shadow-2xl select-none ring-0 sm:ring-1 sm:ring-white/10">
       {/* Toast Notification when link is copied */}
       {copiedToast && (
         <div className="absolute top-16 inset-x-0 z-50 flex justify-center pointer-events-none animate-in fade-in slide-in-from-top duration-200">
@@ -508,9 +582,8 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
         </button>
         <button
           type="button"
-          disabled={activeIndex === posts.length - 1}
           onClick={() => scrollToIndex(activeIndex + 1)}
-          className="w-8 h-8 rounded-full bg-black/50 hover:bg-black/80 disabled:opacity-30 disabled:pointer-events-none text-white backdrop-blur-md border border-white/20 flex items-center justify-center transition active:scale-95 cursor-pointer shadow-lg"
+          className="w-8 h-8 rounded-full bg-black/50 hover:bg-black/80 text-white backdrop-blur-md border border-white/20 flex items-center justify-center transition active:scale-95 cursor-pointer shadow-lg"
           title="Siguiente anuncio (Flecha Abajo)"
         >
           <ChevronDown className="w-4 h-4" />
@@ -521,11 +594,15 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
       <div
         ref={containerRef}
         id="reel-feed-scroll-container"
-        className="relative w-full h-full snap-y snap-mandatory overflow-y-scroll overflow-x-hidden no-scrollbar"
-        style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
+        className="relative w-full h-full snap-y snap-mandatory overflow-y-scroll overflow-x-hidden no-scrollbar overscroll-y-contain"
+        style={{
+          WebkitOverflowScrolling: 'touch',
+          touchAction: 'pan-y',
+          overscrollBehaviorY: 'contain',
+        }}
         tabIndex={0}
       >
-        {posts.map((post, index) => {
+        {feedItems.map((post, index) => {
           const isCurrentActive = index === activeIndex;
           const isFav = favorites.includes(post.id);
           const parsedVideo = parseVideoUrl(post.videoUrl);
@@ -540,7 +617,7 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
 
           return (
             <div
-              key={post.id}
+              key={post.feedInstanceId || `${post.id}_${index}`}
               data-reel-index={index}
               className="reel-item relative w-full h-full snap-start snap-always shrink-0 overflow-hidden bg-black flex flex-col justify-between transform-gpu"
               style={{ contain: 'layout paint', WebkitBackfaceVisibility: 'hidden', backfaceVisibility: 'hidden' }}
@@ -909,7 +986,10 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
       </div>
 
       {/* FIXED GLOBAL BOTTOM SEARCH BAR (Always mounted, zero lag, single DOM node outside scroll-snap) */}
-      <div className="absolute inset-x-0 bottom-0 z-30 pb-3 pt-3 px-3.5 sm:px-4 pointer-events-auto bg-gradient-to-t from-black via-black/85 to-transparent">
+      <div 
+        className="absolute inset-x-0 bottom-0 z-30 pb-3 pt-3 px-3.5 sm:px-4 pointer-events-auto bg-gradient-to-t from-black via-black/85 to-transparent"
+        style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 0.75rem))' }}
+      >
         <div className="relative flex items-center bg-black/85 border border-white/20 focus-within:border-cyan-400/80 rounded-2xl p-1.5 transition shadow-2xl ring-1 ring-white/10">
           <div className="pl-2.5 pr-1.5 flex items-center text-cyan-300 pointer-events-none">
             <Search className="w-4 h-4 drop-shadow-[0_1px_4px_rgba(0,180,216,0.6)]" />

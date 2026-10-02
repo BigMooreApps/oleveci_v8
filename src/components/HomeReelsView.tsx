@@ -401,7 +401,7 @@ export const HomeReelsView: React.FC<HomeReelsViewProps> = ({
   };
 
   return (
-    <div className="relative w-full min-h-[calc(100dvh-56px)] sm:min-h-[calc(100dvh-64px)] bg-[#040e28] sm:bg-gradient-to-r sm:from-[#03153d] sm:via-[#052264] sm:to-[#0a3899] flex flex-col items-center justify-center sm:py-2.5 overflow-hidden select-none">
+    <div className="relative w-full h-[calc(100dvh-53px)] sm:h-[calc(100dvh-64px)] min-h-[calc(100dvh-53px)] sm:min-h-[calc(100dvh-64px)] bg-[#040e28] sm:bg-gradient-to-r sm:from-[#03153d] sm:via-[#052264] sm:to-[#0a3899] flex flex-col items-center justify-center sm:py-2.5 overflow-hidden select-none">
       {/* Decorative ambient glow on desktop matching the Descubrir and Itinerarios banners */}
       <div className="hidden sm:block absolute -top-16 -left-16 w-80 h-80 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none" />
       <div className="hidden sm:block absolute -bottom-16 -right-16 w-96 h-96 bg-[#007af7]/20 rounded-full blur-3xl pointer-events-none" />

@@ -116,7 +116,7 @@ const MainApp: React.FC = () => {
   }, [selectedPost, selectedBusinessId]);
 
   return (
-    <div className="min-h-screen bg-[#F2F6FA] flex flex-col text-slate-900 font-sans antialiased selection:bg-[#007af7] selection:text-white">
+    <div className={`min-h-screen ${currentRole === 'home' ? 'bg-[#040e28]' : 'bg-[#F2F6FA]'} flex flex-col text-slate-900 font-sans antialiased selection:bg-[#007af7] selection:text-white`}>
       {/* Welcome Presentation Splash Animation (snappy and skippable) */}
       <WelcomeSplashScreen durationMs={1200} onFinish={handleWelcomeSplashFinish} />
 

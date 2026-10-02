@@ -84,11 +84,36 @@
 
 /* Utility to hide scrollbars completely when needed */
 .no-scrollbar::-webkit-scrollbar {
-  display: none;
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 .no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+/* Eliminate scrollbars, corner grips, and overscroll bounce in Reel Feed */
+.reel-container-9-16,
+.reel-container-9-16 * {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+.reel-container-9-16::-webkit-scrollbar,
+.reel-container-9-16 *::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+.reel-container-9-16::-webkit-scrollbar-corner,
+.reel-container-9-16 *::-webkit-scrollbar-corner {
+  display: none !important;
+  background: transparent !important;
+}
+
+#reel-feed-scroll-container {
+  overscroll-behavior-y: contain !important;
+  overscroll-behavior-x: none !important;
 }
 
 @keyframes floatLogo {
