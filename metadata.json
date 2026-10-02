@@ -1,0 +1,10 @@
+{
+  "name": "Remix Remix Remix OleVeci v5",
+  "description": "Descubre qué hay hoy cerca de ti: promociones, eventos, productos y servicios de comercios locales.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

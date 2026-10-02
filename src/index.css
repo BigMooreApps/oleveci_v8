@@ -1,0 +1,280 @@
+@import "tailwindcss";
+
+@theme {
+  --color-slate-900: #021b58;
+  --color-slate-950: #021b58;
+  --color-slate-800: #021b58;
+  --color-gray-900: #021b58;
+  --color-gray-950: #021b58;
+  --color-gray-800: #021b58;
+  --color-zinc-900: #021b58;
+  --color-zinc-950: #021b58;
+  --color-zinc-800: #021b58;
+  --color-neutral-900: #021b58;
+  --color-neutral-950: #021b58;
+  --color-neutral-800: #021b58;
+  --color-black: #021b58;
+}
+
+@layer base {
+  :root {
+    --brand-ole: #021b58;
+  }
+
+  body {
+    color: #021b58;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  h1:not([class*="text-"]),
+  h2:not([class*="text-"]),
+  h3:not([class*="text-"]),
+  h4:not([class*="text-"]),
+  h5:not([class*="text-"]),
+  h6:not([class*="text-"]) {
+    color: inherit;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]):not([class*="text-"]),
+  textarea:not([class*="text-"]),
+  select:not([class*="text-"]) {
+    color: #021b58;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+/* Explicit rule ensuring all black or dark text across the entire app uses the exact brand Ole navy blue (#021b58) */
+.text-black,
+.text-slate-950,
+.text-slate-900,
+.text-slate-800,
+.text-gray-950,
+.text-gray-900,
+.text-gray-800,
+.text-zinc-950,
+.text-zinc-900,
+.text-zinc-800,
+.text-neutral-950,
+.text-neutral-900,
+.text-neutral-800 {
+  color: #021b58;
+}
+
+/* Custom subtle scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Utility to hide scrollbars completely when needed */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes floatLogo {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-5px) scale(1.018);
+  }
+}
+
+@keyframes floatIconBounce {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-4px) rotate(2deg);
+  }
+}
+
+@keyframes compassNeedleSway {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-8deg);
+  }
+  75% {
+    transform: rotate(8deg);
+  }
+}
+
+@keyframes pulseGlowRing {
+  0%, 100% {
+    transform: scale(0.96);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 0.9;
+  }
+}
+
+.animate-float-icon {
+  animation: floatIconBounce 2.8s ease-in-out infinite;
+}
+
+.animate-compass-sway {
+  animation: compassNeedleSway 3.2s ease-in-out infinite;
+}
+
+.animate-pulse-ring {
+  animation: pulseGlowRing 2s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 0.75;
+    transform: scale(1.08);
+  }
+}
+
+.animate-float-logo {
+  animation: floatLogo 2.4s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+/* 3D Energetic Diagonal Discount Badge matching design */
+.badge-sunburst {
+  position: relative;
+}
+.badge-sunburst::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  right: -8px;
+  width: 14px;
+  height: 14px;
+  background: radial-gradient(circle, rgba(255,183,3,0.9) 20%, transparent 70%);
+  pointer-events: none;
+}
+
+.price-pill-glow {
+  box-shadow: 0 4px 14px 0 rgba(0, 102, 255, 0.42);
+}
+
+.card-elevation {
+  box-shadow: 0 10px 30px -5px rgba(15, 42, 90, 0.08), 0 0 1px 1px rgba(15, 42, 90, 0.05);
+  transition: box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease, transform 0.3s ease;
+}
+
+.card-elevation:hover {
+  box-shadow: 0 22px 45px -6px rgba(15, 42, 90, 0.16), 0 0 1px 1px rgba(0, 102, 255, 0.18);
+}
+
+.action-btn-shadow {
+  box-shadow: 0 2px 6px -1px rgba(0, 50, 150, 0.08);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.discount-badge-diagonal {
+  transform: rotate(-14deg);
+  transform-origin: center center;
+}
+
+.discount-badge-pill {
+  background: linear-gradient(180deg, #ffc700 0%, #ff7700 48%, #ff2e00 100%);
+  box-shadow: 
+    inset 0 1.5px 2px rgba(255, 255, 255, 0.75),
+    inset 0 -2px 3px rgba(180, 30, 0, 0.45),
+    0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+/* Remove number input spin buttons across all browsers */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Leaflet custom marker reset */
+.leaflet-div-icon.oleveci-leaflet-marker {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* TikTok 9:16 aspect ratio container */
+@media (min-width: 640px) {
+  .reel-container-9-16 {
+    aspect-ratio: 9 / 16 !important;
+  }
+}
+
+/* Animated Swipe Up Gesture Indicator for First Reel */
+@keyframes swipeUpGesture {
+  0% {
+    transform: translateY(16px);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(10px);
+  }
+  60% {
+    transform: translateY(-18px);
+    opacity: 1;
+  }
+  85% {
+    transform: translateY(-26px);
+    opacity: 0.3;
+  }
+  100% {
+    transform: translateY(-32px);
+    opacity: 0;
+  }
+}
+
+@keyframes pulseHalo {
+  0%, 100% {
+    transform: scale(0.9);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.4);
+    opacity: 0.8;
+  }
+}
+
+.animate-swipe-up-gesture {
+  animation: swipeUpGesture 2.2s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+.animate-pulse-halo {
+  animation: pulseHalo 2.2s ease-in-out infinite;
+}
+
