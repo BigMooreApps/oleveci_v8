@@ -70,6 +70,7 @@ const ReelItemVideo = React.memo<ReelItemVideoProps>(({
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [showFeedback, setShowFeedback] = useState<'play' | 'pause' | null>(null);
+  const [isVideoReady, setIsVideoReady] = useState(false);
 
   // Synchronize playback state with active and isPlaying flags
   useEffect(() => {
@@ -80,12 +81,14 @@ const ReelItemVideo = React.memo<ReelItemVideoProps>(({
       video.muted = isMuted;
       const playPromise = video.play();
       if (playPromise !== undefined) {
-        playPromise.catch(() => {
-          if (!video.muted) {
-            video.muted = true;
-            video.play().catch(() => {});
-          }
-        });
+        playPromise
+          .then(() => setIsVideoReady(true))
+          .catch(() => {
+            if (!video.muted) {
+              video.muted = true;
+              video.play().then(() => setIsVideoReady(true)).catch(() => {});
+            }
+          });
       }
     } else {
       video.pause();
@@ -98,6 +101,12 @@ const ReelItemVideo = React.memo<ReelItemVideoProps>(({
     if (!video) return;
     video.muted = isMuted;
   }, [isMuted]);
+
+  useEffect(() => {
+    if (!isCurrentActive) {
+      setIsVideoReady(false);
+    }
+  }, [isCurrentActive]);
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -120,21 +129,23 @@ const ReelItemVideo = React.memo<ReelItemVideoProps>(({
           src={poster}
           alt=""
           aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none z-0"
           loading="eager"
           decoding="async"
         />
       )}
 
-      {/* HTML5 video element on top of poster */}
+      {/* HTML5 video element on top of poster - smoothly appears only when playing/ready */}
       <video
         ref={videoRef}
         src={src}
-        poster={poster}
         loop
         playsInline
         preload={isCurrentActive ? 'auto' : 'none'}
-        className="relative w-full h-full object-cover select-none z-10"
+        onPlaying={() => setIsVideoReady(true)}
+        className={`absolute inset-0 w-full h-full object-cover select-none z-10 transition-opacity duration-200 ${
+          isVideoReady && isCurrentActive ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
       />
 
       {/* Center Play Button Overlay when explicitly Paused */}
@@ -655,14 +666,27 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
   const [feedItems, setFeedItems] = useState<FeedPostItem[]>([]);
   const batchCountRef = useRef(0);
 
-  // Observer refs to prevent disconnecting during active scroll
-  const observerRef = useRef<IntersectionObserver | null>(null);
-  const observedElementsRef = useRef<WeakSet<Element>>(new WeakSet());
+  // Stable posts signature: Only re-initialize feed if the actual set of posts/filters changes,
+  // NOT when a post's metric (views, clicks, etc.) updates!
+  const postsSignature = useMemo(
+    () => (posts || []).map((p) => p.id).join(','),
+    [posts]
+  );
+
   const activeIndexRef = useRef(0);
   const feedItemsRef = useRef(feedItems);
   feedItemsRef.current = feedItems;
   const trackInteractionRef = useRef(trackInteraction);
   trackInteractionRef.current = trackInteraction;
+
+  // Touch and Transition state for strict 1-by-1 TikTok / Instagram paging
+  const [dragOffset, setDragOffset] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const touchStartYRef = useRef(0);
+  const touchStartXRef = useRef(0);
+  const touchStartTimeRef = useRef(0);
+  const isDraggingRef = useRef(false);
+  const isTransitioningRef = useRef(false);
 
   // Initialize infinite randomized feed whenever source posts or filters change
   useEffect(() => {
@@ -698,11 +722,7 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
     }
     batchCountRef.current = currentBatch;
     setFeedItems(initialItems);
-
-    if (containerRef.current) {
-      containerRef.current.scrollTop = 0;
-    }
-  }, [posts]);
+  }, [postsSignature]);
 
   // Dynamically append more randomized batches as the user approaches the end of the feed (never ends!)
   useEffect(() => {
@@ -720,9 +740,9 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
 
       setFeedItems((prev) => [...prev, ...nextBatch]);
     }
-  }, [activeIndex, posts, feedItems.length]);
+  }, [activeIndex, postsSignature, feedItems.length]);
 
-  // Aggressively preload upcoming images in a sliding window (current - 1 to current + 8)
+  // Aggressively preload upcoming images in a sliding window with GPU decoding
   useEffect(() => {
     if (!feedItems || feedItems.length === 0) return;
     const startIndex = Math.max(0, activeIndex - 1);
@@ -744,80 +764,132 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
           preloadedUrlsRef.current.add(url);
           const img = new Image();
           img.src = url;
+          if ('decode' in img) {
+            img.decode().catch(() => {});
+          }
         }
       });
     }
   }, [activeIndex, feedItems]);
 
-  // Stable IntersectionObserver that observes new elements without ever disconnecting
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    if (!observerRef.current) {
-      observerRef.current = new IntersectionObserver(
-        (entries) => {
-          let bestEntry: IntersectionObserverEntry | null = null;
-          for (const entry of entries) {
-            if (entry.isIntersecting) {
-              if (!bestEntry || entry.intersectionRatio > bestEntry.intersectionRatio) {
-                bestEntry = entry;
-              }
-            }
-          }
-
-          if (bestEntry) {
-            const indexAttr = bestEntry.target.getAttribute('data-reel-index');
-            if (indexAttr !== null) {
-              const idx = parseInt(indexAttr, 10);
-              if (idx !== activeIndexRef.current) {
-                activeIndexRef.current = idx;
-                setActiveIndex(idx);
-                setIsPlaying(true);
-
-                const post = feedItemsRef.current[idx];
-                if (post && !viewedPostsRef.current.has(post.id)) {
-                  viewedPostsRef.current.add(post.id);
-                  if (!post.id.startsWith('itinerary_')) {
-                    trackInteractionRef.current(post.id, 'view');
-                  }
-                }
-              }
-            }
-          }
-        },
-        {
-          root: container,
-          threshold: [0.55],
-        }
-      );
-    }
-
-    const items = container.querySelectorAll('.reel-item');
-    items.forEach((item) => {
-      if (!observedElementsRef.current.has(item)) {
-        observedElementsRef.current.add(item);
-        observerRef.current?.observe(item);
-      }
-    });
-  }, [feedItems]);
-
-  // Disconnect observer only on unmount
-  useEffect(() => {
-    return () => {
-      observerRef.current?.disconnect();
-      observerRef.current = null;
-    };
-  }, []);
-
+  // Navigate to specific index with strict 1-by-1 clamping
   const scrollToIndex = useCallback((index: number) => {
-    const container = containerRef.current;
-    if (!container) return;
-    const targetElement = container.querySelector(`[data-reel-index="${index}"]`) as HTMLElement;
-    if (targetElement) {
-      targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (isTransitioningRef.current) return;
+    const clamped = Math.max(0, Math.min(feedItemsRef.current.length - 1, index));
+    if (clamped !== activeIndexRef.current) {
+      isTransitioningRef.current = true;
+      activeIndexRef.current = clamped;
+      setActiveIndex(clamped);
+      setIsPlaying(true);
+
+      const post = feedItemsRef.current[clamped];
+      if (post && !viewedPostsRef.current.has(post.id)) {
+        viewedPostsRef.current.add(post.id);
+        if (!post.id.startsWith('itinerary_')) {
+          trackInteractionRef.current(post.id, 'view');
+        }
+      }
+
+      setTimeout(() => {
+        isTransitioningRef.current = false;
+      }, 340);
     }
   }, []);
+
+  const goToNext = useCallback(() => {
+    scrollToIndex(activeIndexRef.current + 1);
+  }, [scrollToIndex]);
+
+  const goToPrev = useCallback(() => {
+    scrollToIndex(activeIndexRef.current - 1);
+  }, [scrollToIndex]);
+
+  // Touch handlers for strict 1-by-1 swipe gesture (TikTok / Instagram)
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (document.activeElement?.tagName === 'INPUT') return;
+    if (isTransitioningRef.current) return;
+
+    touchStartYRef.current = e.touches[0].clientY;
+    touchStartXRef.current = e.touches[0].clientX;
+    touchStartTimeRef.current = Date.now();
+    isDraggingRef.current = false;
+    setIsDragging(false);
+    setDragOffset(0);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (isTransitioningRef.current) return;
+    const currentY = e.touches[0].clientY;
+    const currentX = e.touches[0].clientX;
+    const diffY = currentY - touchStartYRef.current;
+    const diffX = currentX - touchStartXRef.current;
+
+    // Detect if this is vertical drag (not horizontal swipe or tap)
+    if (!isDraggingRef.current) {
+      if (Math.abs(diffY) > 8 && Math.abs(diffY) > Math.abs(diffX)) {
+        isDraggingRef.current = true;
+        setIsDragging(true);
+      } else {
+        return;
+      }
+    }
+
+    if (e.cancelable) {
+      e.preventDefault();
+    }
+
+    // Apply rubber band resistance if at boundaries
+    let dampedDiffY = diffY;
+    if (activeIndex === 0 && diffY > 0) {
+      dampedDiffY = diffY * 0.25;
+    } else if (activeIndex >= feedItems.length - 1 && diffY < 0) {
+      dampedDiffY = diffY * 0.25;
+    }
+
+    setDragOffset(dampedDiffY);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!isDraggingRef.current) {
+      setDragOffset(0);
+      return;
+    }
+
+    isDraggingRef.current = false;
+    setIsDragging(false);
+    const endY = e.changedTouches[0].clientY;
+    const diffY = endY - touchStartYRef.current;
+    const elapsed = Date.now() - touchStartTimeRef.current;
+    const velocity = diffY / Math.max(1, elapsed);
+
+    // Determine target index: strictly ONE reel step
+    const threshold = 40;
+    let targetIndex = activeIndex;
+
+    if (diffY < -threshold || (velocity < -0.3 && diffY < -15)) {
+      targetIndex = activeIndex + 1;
+    } else if (diffY > threshold || (velocity > 0.3 && diffY > 15)) {
+      targetIndex = activeIndex - 1;
+    }
+
+    setDragOffset(0);
+
+    if (targetIndex !== activeIndex) {
+      scrollToIndex(targetIndex);
+    }
+  };
+
+  // Mouse wheel handler for desktop (advances strictly one reel per notch)
+  const handleWheel = (e: React.WheelEvent) => {
+    if (isTransitioningRef.current) return;
+    if (Math.abs(e.deltaY) > 25) {
+      if (e.deltaY > 0) {
+        goToNext();
+      } else {
+        goToPrev();
+      }
+    }
+  };
 
   // Keyboard navigation (ArrowUp, ArrowDown, Space)
   useEffect(() => {
@@ -826,10 +898,10 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
 
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        scrollToIndex(Math.min(feedItems.length - 1, activeIndex + 1));
+        goToNext();
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
-        scrollToIndex(Math.max(0, activeIndex - 1));
+        goToPrev();
       } else if (e.key === ' ') {
         e.preventDefault();
         setIsPlaying((prev) => !prev);
@@ -838,7 +910,7 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeIndex, feedItems.length, scrollToIndex]);
+  }, [goToNext, goToPrev]);
 
   // Stable action callbacks
   const handleTogglePlay = useCallback(() => {
@@ -967,7 +1039,7 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
         <button
           type="button"
           disabled={activeIndex === 0}
-          onClick={() => scrollToIndex(activeIndex - 1)}
+          onClick={goToPrev}
           className="w-8 h-8 rounded-full bg-black/50 hover:bg-black/80 disabled:opacity-30 disabled:pointer-events-none text-white backdrop-blur-md border border-white/20 flex items-center justify-center transition active:scale-95 cursor-pointer shadow-lg"
           title="Anuncio anterior (Flecha Arriba)"
         >
@@ -975,47 +1047,70 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
         </button>
         <button
           type="button"
-          onClick={() => scrollToIndex(activeIndex + 1)}
-          className="w-8 h-8 rounded-full bg-black/50 hover:bg-black/80 text-white backdrop-blur-md border border-white/20 flex items-center justify-center transition active:scale-95 cursor-pointer shadow-lg"
+          disabled={activeIndex >= feedItems.length - 1}
+          onClick={goToNext}
+          className="w-8 h-8 rounded-full bg-black/50 hover:bg-black/80 disabled:opacity-30 disabled:pointer-events-none text-white backdrop-blur-md border border-white/20 flex items-center justify-center transition active:scale-95 cursor-pointer shadow-lg"
           title="Siguiente anuncio (Flecha Abajo)"
         >
           <ChevronDown className="w-4 h-4" />
         </button>
       </div>
 
-      {/* Vertical Snap Reel Feed Container */}
+      {/* Vertical Pager Container (TikTok / Instagram 1-by-1 controlled touch transition) */}
       <div
         ref={containerRef}
         id="reel-feed-scroll-container"
-        className="relative w-full h-full snap-y snap-mandatory overflow-y-scroll overflow-x-hidden no-scrollbar overscroll-y-contain"
+        className="relative w-full h-full overflow-hidden select-none"
         style={{
-          WebkitOverflowScrolling: 'touch',
-          touchAction: 'pan-y',
-          overscrollBehaviorY: 'contain',
+          touchAction: 'none',
         }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onWheel={handleWheel}
         tabIndex={0}
       >
-        {feedItems.map((post, index) => (
-          <ReelItem
-            key={post.feedInstanceId || `${post.id}_${index}`}
-            post={post}
-            index={index}
-            isCurrentActive={index === activeIndex}
-            isPlaying={isPlaying}
-            isMuted={isMuted}
-            isFav={favorites.includes(post.id)}
-            currentCity={currentCity}
-            onTogglePlay={handleTogglePlay}
-            onToggleMute={handleToggleMute}
-            onToggleFavorite={handleToggleFavorite}
-            onSelectPost={onSelectPost}
-            onSelectBusiness={onSelectBusiness}
-            onWhatsApp={handleWhatsApp}
-            onCall={handleCall}
-            onHowToGetThere={handleHowToGetThere}
-            onShare={handleShare}
-          />
-        ))}
+        <div
+          className="w-full h-full flex flex-col will-change-transform"
+          style={{
+            transform: `translate3d(0, calc(-${activeIndex * 100}% + ${dragOffset}px), 0)`,
+            transition: isDragging
+              ? 'none'
+              : 'transform 320ms cubic-bezier(0.16, 1, 0.3, 1)',
+          }}
+        >
+          {feedItems.map((post, index) => {
+            const isNear = Math.abs(index - activeIndex) <= 2;
+            return (
+              <div
+                key={post.feedInstanceId || `${post.id}_${index}`}
+                className="w-full h-full shrink-0 relative overflow-hidden"
+                style={{
+                  visibility: isNear ? 'visible' : 'hidden',
+                }}
+              >
+                <ReelItem
+                  post={post}
+                  index={index}
+                  isCurrentActive={index === activeIndex}
+                  isPlaying={isPlaying}
+                  isMuted={isMuted}
+                  isFav={favorites.includes(post.id)}
+                  currentCity={currentCity}
+                  onTogglePlay={handleTogglePlay}
+                  onToggleMute={handleToggleMute}
+                  onToggleFavorite={handleToggleFavorite}
+                  onSelectPost={onSelectPost}
+                  onSelectBusiness={onSelectBusiness}
+                  onWhatsApp={handleWhatsApp}
+                  onCall={handleCall}
+                  onHowToGetThere={handleHowToGetThere}
+                  onShare={handleShare}
+                />
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* FIXED GLOBAL BOTTOM SEARCH BAR (Always mounted, zero lag, single DOM node outside scroll-snap) */}
