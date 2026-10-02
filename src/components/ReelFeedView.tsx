@@ -219,7 +219,6 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
   const [selectedMapPost, setSelectedMapPost] = useState<Post | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const viewedPostsRef = useRef<Set<string>>(new Set());
-  const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
   const preloadedUrlsRef = useRef<Set<string>>(new Set());
 
   // Aggressively preload upcoming images in a sliding window (current - 1 to current + 4)
@@ -543,7 +542,8 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
             <div
               key={post.id}
               data-reel-index={index}
-              className="reel-item relative w-full h-full snap-start snap-always shrink-0 overflow-hidden bg-black flex flex-col justify-between"
+              className="reel-item relative w-full h-full snap-start snap-always shrink-0 overflow-hidden bg-black flex flex-col justify-between transform-gpu"
+              style={{ contain: 'layout paint', WebkitBackfaceVisibility: 'hidden', backfaceVisibility: 'hidden' }}
             >
               {/* Media Layer (Image or Video) with ambient background */}
               <div
@@ -609,26 +609,16 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
                     )
                   )
                 ) : (
-                  // Crisp image media with instant preloading, custom framing, and smooth skeleton
-                  <div className="relative w-full h-full bg-neutral-950 flex items-center justify-center overflow-hidden select-none">
-                    {/* Skeleton loader with subtle dark gradient and brand spinner */}
-                    <div
-                      className={`absolute inset-0 bg-gradient-to-b from-neutral-900 via-neutral-950 to-black transition-opacity duration-300 pointer-events-none flex flex-col items-center justify-center ${
-                        loadedImages[post.id] ? 'opacity-0' : 'opacity-100'
-                      }`}
-                    >
-                      <div className="w-10 h-10 rounded-full border border-white/10 bg-white/5 backdrop-blur-sm flex items-center justify-center">
-                        <div className="w-5 h-5 rounded-full border-2 border-cyan-400/40 border-t-cyan-400 animate-spin" />
-                      </div>
-                    </div>
+                  // Crisp image media with instant preloading, custom framing, and zero-delay rendering
+                  <div className="relative w-full h-full bg-[#0a0f1d] flex items-center justify-center overflow-hidden select-none">
+                    {/* Dark placeholder gradient behind image */}
+                    <div className="absolute inset-0 bg-gradient-to-b from-[#0e1628] via-[#090d18] to-black pointer-events-none" />
 
                     {/* Crisp foreground image */}
                     <img
                       src={getReelPosterUrl(post.imageUrl)}
                       alt={post.title}
-                      className={`relative w-full h-full object-cover transition-opacity duration-300 ease-out ${
-                        loadedImages[post.id] ? 'opacity-100' : 'opacity-0'
-                      }`}
+                      className="relative w-full h-full object-cover"
                       style={{
                         objectPosition: post.imagePosition
                           ? `${post.imagePosition.x}% ${post.imagePosition.y}%`
@@ -639,10 +629,7 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
                           : 'center',
                       }}
                       loading={Math.abs(index - activeIndex) <= 2 ? 'eager' : 'lazy'}
-                      decoding="async"
-                      onLoad={() =>
-                        setLoadedImages((prev) => (prev[post.id] ? prev : { ...prev, [post.id]: true }))
-                      }
+                      decoding={Math.abs(index - activeIndex) <= 1 ? 'sync' : 'async'}
                     />
                   </div>
                 )}
@@ -676,7 +663,7 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
                   </div>
                 ) : null}
 
-                {/* Location Badge on Top-Right ("la etiqueta que dice centro * cajica este en la parte superior derecha") */}
+                {/* Location Badge on Top-Right */}
                 <div className="absolute top-3.5 sm:top-4 right-3.5 z-20 flex items-center gap-2 pointer-events-auto">
                   {hasVideo && isCurrentActive && (
                     <>
@@ -687,7 +674,7 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
                           e.stopPropagation();
                           setIsPlaying((prev) => !prev);
                         }}
-                        className="w-7 h-7 rounded-full bg-black/60 backdrop-blur-md border border-white/25 text-white flex items-center justify-center hover:bg-black/80 active:scale-95 transition cursor-pointer shadow-lg"
+                        className="w-7 h-7 rounded-full bg-black/80 border border-white/25 text-white flex items-center justify-center hover:bg-black active:scale-95 transition cursor-pointer shadow-lg"
                         title={isPlaying ? 'Pausar video' : 'Reproducir video'}
                         aria-label="Pausar o reproducir video"
                       >
@@ -705,7 +692,7 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
                           e.stopPropagation();
                           setIsMuted((prev) => !prev);
                         }}
-                        className="w-7 h-7 rounded-full bg-black/60 backdrop-blur-md border border-white/25 text-white flex items-center justify-center hover:bg-black/80 active:scale-95 transition cursor-pointer shadow-lg"
+                        className="w-7 h-7 rounded-full bg-black/80 border border-white/25 text-white flex items-center justify-center hover:bg-black active:scale-95 transition cursor-pointer shadow-lg"
                         title={isMuted ? 'Activar sonido' : 'Silenciar'}
                         aria-label="Alternar sonido"
                       >
@@ -714,7 +701,7 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
                     </>
                   )}
 
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-white text-xs font-bold shadow-lg shadow-black/40 pointer-events-none">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/80 border border-white/20 text-white text-xs font-bold shadow-lg shadow-black/40 pointer-events-none">
                     <MapPin className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
                     <span className="truncate max-w-[170px]">
                       {post.businessSector || 'Centro'} · {post.businessCity || currentCity || 'Cajicá'}
@@ -723,13 +710,13 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
                 </div>
 
                 {/* Scrim Overlay Gradients for Perfect Legibility */}
-                <div className="absolute inset-x-0 bottom-0 h-96 bg-gradient-to-t from-black/95 via-black/65 to-transparent pointer-events-none z-10" />
+                <div className="absolute inset-x-0 bottom-0 h-80 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none z-10" />
                 <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/70 via-black/30 to-transparent pointer-events-none z-10" />
               </div>
 
               {/* RIGHT-HAND ACTION RAIL (WhatsApp, Llamar, Cómo llegar, Compartir y Negocio mejorado) */}
               <div
-                className="absolute right-2.5 sm:right-3.5 bottom-20 sm:bottom-24 z-30 flex flex-col items-center gap-3 sm:gap-3.5 pointer-events-auto"
+                className="absolute right-2.5 sm:right-3.5 bottom-16 sm:bottom-18 z-30 flex flex-col items-center gap-2.5 sm:gap-3 pointer-events-auto"
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* 1. Icono del Negocio o Itinerario Mejorado */}
@@ -742,7 +729,7 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
                         onSelectBusiness(post.businessId);
                       }
                     }}
-                    className="relative w-12 h-12 sm:w-13 sm:h-13 rounded-full border-2 border-white ring-2 ring-cyan-400/70 shadow-2xl overflow-hidden bg-white/20 backdrop-blur-md cursor-pointer active:scale-90 transition group hover:ring-cyan-300"
+                    className="relative w-12 h-12 sm:w-13 sm:h-13 rounded-full border-2 border-white ring-2 ring-cyan-400/70 shadow-2xl overflow-hidden bg-neutral-900 cursor-pointer active:scale-90 transition group hover:ring-cyan-300"
                     title={post.isPlan ? `Ver plan: ${post.title}` : `Ver perfil del comercio: ${post.businessName}`}
                   >
                     <img
@@ -785,7 +772,7 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
                     title={`Llamar a ${post.businessName}`}
                     aria-label="Llamar"
                   >
-                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#007af7] text-white flex items-center justify-center backdrop-blur-md border border-blue-400/40 shadow-lg shadow-blue-600/30 hover:bg-[#0066d6] transition">
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#007af7] text-white flex items-center justify-center border border-blue-300/40 shadow-lg shadow-blue-600/30 hover:bg-[#0066d6] transition">
                       <Phone className="w-5 h-5 fill-current" />
                     </div>
                     <span className="text-[9px] font-bold text-white mt-0.5 drop-shadow-md">
@@ -802,7 +789,7 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
                   title="Cómo llegar y ver ubicación"
                   aria-label="Cómo llegar"
                 >
-                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-cyan-600 text-white flex items-center justify-center backdrop-blur-md border border-cyan-400/40 shadow-lg shadow-cyan-600/30 hover:bg-cyan-500 transition">
+                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#0098b8] text-white flex items-center justify-center border border-cyan-300/40 shadow-lg shadow-cyan-600/30 hover:bg-cyan-500 transition">
                     <Navigation className="w-5 h-5 fill-current -rotate-45" />
                   </div>
                   <span className="text-[9px] font-bold text-white mt-0.5 drop-shadow-md text-center leading-none">
@@ -818,7 +805,7 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
                   title="Compartir anuncio"
                   aria-label="Compartir"
                 >
-                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-black/50 text-white flex items-center justify-center backdrop-blur-md border border-white/20 hover:bg-black/70 transition shadow-xl">
+                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-neutral-900/90 text-white flex items-center justify-center border border-white/25 shadow-xl hover:bg-neutral-800 transition">
                     <Share2 className="w-5 h-5 group-hover:scale-110 transition-transform" />
                   </div>
                   <span className="text-[9px] font-bold text-white mt-0.5 drop-shadow-md">
@@ -827,9 +814,9 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
                 </button>
               </div>
 
-              {/* BOTTOM INFORMATION & SEARCH BAR ("el buscador en la parte inferior, tal cual como ocurre con tiktok") */}
+              {/* BOTTOM INFORMATION (Business, Title, Price, Validity, Description) */}
               <div
-                className="absolute inset-x-0 bottom-0 z-20 pb-3 pt-6 px-3.5 sm:px-4 pointer-events-auto flex flex-col gap-2.5"
+                className="absolute inset-x-0 bottom-16 sm:bottom-18 z-20 pb-2 pt-6 px-3.5 sm:px-4 pointer-events-auto flex flex-col gap-2"
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Text Info Section: Business, Title, Price, Validity */}
@@ -915,69 +902,69 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
                     </div>
                   )}
                 </div>
-
-                {/* THE BOTTOM SEARCH BAR ("el buscador en la parte inferior, tal cual como ocurre con tiktok") */}
-                <div className="w-full pt-1">
-                  <div className="relative flex items-center bg-black/50 hover:bg-black/65 focus-within:bg-black/75 backdrop-blur-xl border border-white/25 focus-within:border-cyan-400/80 rounded-2xl p-1.5 transition shadow-2xl ring-1 ring-white/10">
-                    <div className="pl-2.5 pr-1.5 flex items-center text-cyan-300 pointer-events-none">
-                      <Search className="w-4 h-4 drop-shadow-[0_1px_4px_rgba(0,180,216,0.6)]" />
-                    </div>
-
-                    <input
-                      ref={searchInputRef}
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder={`Buscar en ${currentCity || 'Cajicá'} (promos, planes)...`}
-                      className="w-full bg-transparent text-xs text-white placeholder:text-blue-100/60 focus:outline-hidden py-1 px-1 font-medium"
-                      aria-label="Buscar planes o anuncios"
-                    />
-
-                    {/* Clear search or indicator */}
-                    {searchQuery ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSearchQuery('');
-                          if (searchInputRef.current) {
-                            searchInputRef.current.focus();
-                          }
-                        }}
-                        className="p-1 rounded-full text-blue-200 hover:text-white hover:bg-white/20 transition cursor-pointer mr-1 shrink-0"
-                        title="Limpiar búsqueda"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    ) : (
-                      <span className="text-[10px] text-white/50 px-2 shrink-0 hidden xs:inline">
-                        {posts.length} {posts.length === 1 ? 'anuncio' : 'anuncios'}
-                      </span>
-                    )}
-
-                    {/* Filter shortcut icon next to search */}
-                    <button
-                      type="button"
-                      onClick={onOpenFilterModal}
-                      className={`p-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1 shrink-0 cursor-pointer ${
-                        activeFiltersCount > 0
-                          ? 'bg-[#007af7] text-white border-cyan-300'
-                          : 'bg-white/15 hover:bg-white/25 text-white border-white/20'
-                      }`}
-                      title="Abrir filtros"
-                    >
-                      <SlidersHorizontal className="w-3.5 h-3.5" />
-                      {activeFiltersCount > 0 && (
-                        <span className="text-[10px] font-black text-cyan-200">
-                          {activeFiltersCount}
-                        </span>
-                      )}
-                    </button>
-                  </div>
-                </div>
               </div>
             </div>
           );
         })}
+      </div>
+
+      {/* FIXED GLOBAL BOTTOM SEARCH BAR (Always mounted, zero lag, single DOM node outside scroll-snap) */}
+      <div className="absolute inset-x-0 bottom-0 z-30 pb-3 pt-3 px-3.5 sm:px-4 pointer-events-auto bg-gradient-to-t from-black via-black/85 to-transparent">
+        <div className="relative flex items-center bg-black/85 border border-white/20 focus-within:border-cyan-400/80 rounded-2xl p-1.5 transition shadow-2xl ring-1 ring-white/10">
+          <div className="pl-2.5 pr-1.5 flex items-center text-cyan-300 pointer-events-none">
+            <Search className="w-4 h-4 drop-shadow-[0_1px_4px_rgba(0,180,216,0.6)]" />
+          </div>
+
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={`Buscar en ${currentCity || 'Cajicá'} (promos, planes)...`}
+            className="w-full bg-transparent text-xs text-white placeholder:text-blue-100/60 focus:outline-hidden py-1 px-1 font-medium"
+            aria-label="Buscar planes o anuncios"
+          />
+
+          {/* Clear search or indicator */}
+          {searchQuery ? (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery('');
+                if (searchInputRef.current) {
+                  searchInputRef.current.focus();
+                }
+              }}
+              className="p-1 rounded-full text-blue-200 hover:text-white hover:bg-white/20 transition cursor-pointer mr-1 shrink-0"
+              title="Limpiar búsqueda"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          ) : (
+            <span className="text-[10px] text-white/50 px-2 shrink-0 hidden xs:inline">
+              {posts.length} {posts.length === 1 ? 'anuncio' : 'anuncios'}
+            </span>
+          )}
+
+          {/* Filter shortcut icon next to search */}
+          <button
+            type="button"
+            onClick={onOpenFilterModal}
+            className={`p-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1 shrink-0 cursor-pointer ${
+              activeFiltersCount > 0
+                ? 'bg-[#007af7] text-white border-cyan-300'
+                : 'bg-white/15 hover:bg-white/25 text-white border-white/20'
+            }`}
+            title="Abrir filtros"
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            {activeFiltersCount > 0 && (
+              <span className="text-[10px] font-black text-cyan-200">
+                {activeFiltersCount}
+              </span>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Interactive Business Location Map Modal (Cómo llegar) */}
