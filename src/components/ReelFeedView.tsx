@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Post } from '../types';
 import { useApp } from '../context/AppContext';
 import { WhatsAppIcon } from './WhatsAppIcon';
@@ -190,15 +190,17 @@ interface FeedPostItem extends Post {
   feedInstanceId: string;
 }
 
-const shuffleArray = <T,>(arr: T[]): T[] => {
+function shuffleArray<T extends Post>(arr: T[]): T[] {
   if (arr.length <= 1) return [...arr];
   const result = [...arr];
   for (let i = result.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [result[i], result[j]] = [result[j], result[i]];
+    const temp = result[i];
+    result[i] = result[j];
+    result[j] = temp;
   }
   return result;
-};
+}
 
 // ==========================================
 // MEMOIZED REEL ITEM COMPONENT
@@ -669,7 +671,7 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
   // Stable posts signature: Only re-initialize feed if the actual set of posts/filters changes,
   // NOT when a post's metric (views, clicks, etc.) updates!
   const postsSignature = useMemo(
-    () => (posts || []).map((p) => p.id).join(','),
+    () => (posts || []).filter(Boolean).map((p) => p?.id || '').join(','),
     [posts]
   );
 
@@ -775,6 +777,7 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
   // Navigate to specific index with strict 1-by-1 clamping
   const scrollToIndex = useCallback((index: number) => {
     if (isTransitioningRef.current) return;
+    if (!feedItemsRef.current || feedItemsRef.current.length === 0) return;
     const clamped = Math.max(0, Math.min(feedItemsRef.current.length - 1, index));
     if (clamped !== activeIndexRef.current) {
       isTransitioningRef.current = true;
@@ -783,7 +786,7 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
       setIsPlaying(true);
 
       const post = feedItemsRef.current[clamped];
-      if (post && !viewedPostsRef.current.has(post.id)) {
+      if (post && post.id && !viewedPostsRef.current.has(post.id)) {
         viewedPostsRef.current.add(post.id);
         if (!post.id.startsWith('itinerary_')) {
           trackInteractionRef.current(post.id, 'view');
