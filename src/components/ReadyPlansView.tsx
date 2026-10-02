@@ -329,7 +329,7 @@ export const ReadyPlansView: React.FC<ReadyPlansViewProps> = ({
       ) : viewMode === 'grid' ? (
         /* GRID VIEW: 2 columns on mobile, 2-3 on tablet/desktop */
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4">
-          {filteredPlans.map((plan) => {
+          {filteredPlans.map((plan, idx) => {
             const planPosts = resolvePlanPosts(plan, posts);
 
             return (
@@ -344,6 +344,8 @@ export const ReadyPlansView: React.FC<ReadyPlansViewProps> = ({
                     posts={planPosts}
                     bgLayout={plan.bgLayout}
                     theme={plan.theme}
+                    priority={idx < 2}
+                    targetWidth={380}
                     imageClassName="group-hover:scale-105 transition-transform duration-500"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-black/20 pointer-events-none" />
@@ -375,9 +377,9 @@ export const ReadyPlansView: React.FC<ReadyPlansViewProps> = ({
                     {/* Stops avatar preview */}
                     <div className="mt-1.5 flex items-center gap-1 overflow-hidden">
                       <div className="flex -space-x-1.5 shrink-0">
-                        {planPosts.slice(0, 3).map((post, idx) => (
+                        {planPosts.slice(0, 3).map((post, stopIdx) => (
                           <img
-                            key={post.id || idx}
+                            key={post.id || stopIdx}
                             src={getAvatarUrl(post.imageUrl)}
                             alt=""
                             className="w-4 h-4 sm:w-5 sm:h-5 rounded-full object-cover border border-white"
@@ -410,7 +412,7 @@ export const ReadyPlansView: React.FC<ReadyPlansViewProps> = ({
       ) : (
         /* LIST VIEW: Compact horizontal cards on mobile and desktop */
         <div className="space-y-2.5 sm:space-y-3">
-          {filteredPlans.map((plan) => {
+          {filteredPlans.map((plan, idx) => {
             const planPosts = resolvePlanPosts(plan, posts);
 
             return (
@@ -425,6 +427,8 @@ export const ReadyPlansView: React.FC<ReadyPlansViewProps> = ({
                     posts={planPosts}
                     bgLayout={plan.bgLayout}
                     theme={plan.theme}
+                    priority={idx < 2}
+                    targetWidth={280}
                     imageClassName="group-hover:scale-105 transition-transform duration-500"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t sm:bg-gradient-to-r from-slate-950/80 via-transparent to-black/20 pointer-events-none" />

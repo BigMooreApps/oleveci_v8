@@ -272,11 +272,12 @@ export const Feed: React.FC<FeedProps> = ({
           {/* B. Grid Mode (2-Columns as shown in original Image 1) */}
           {viewMode === 'grid' && (
             <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
-              {displayPosts.map((post) => (
+              {displayPosts.map((post, idx) => (
                 <PostCard
                   key={post.id}
                   post={post}
                   viewMode="grid"
+                  priority={idx < 2}
                   onSelectPost={onSelectPost}
                   onSelectBusiness={onSelectBusiness}
                 />
@@ -287,11 +288,12 @@ export const Feed: React.FC<FeedProps> = ({
           {/* C. List Mode */}
           {viewMode === 'list' && (
             <div className="space-y-3.5 max-w-xl mx-auto">
-              {displayPosts.map((post) => (
+              {displayPosts.map((post, idx) => (
                 <PostCard
                   key={post.id}
                   post={post}
                   viewMode="list"
+                  priority={idx < 2}
                   onSelectPost={onSelectPost}
                   onSelectBusiness={onSelectBusiness}
                 />

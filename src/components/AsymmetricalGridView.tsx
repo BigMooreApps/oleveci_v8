@@ -106,6 +106,7 @@ export const AsymmetricalGridView: React.FC<AsymmetricalGridViewProps> = ({
                       post={p0}
                       viewMode="list"
                       cardVariant="hero"
+                      priority={cIdx === 0}
                       className="w-full max-w-none"
                       onSelectPost={onSelectPost}
                       onSelectBusiness={onSelectBusiness}
@@ -117,6 +118,7 @@ export const AsymmetricalGridView: React.FC<AsymmetricalGridViewProps> = ({
                     <PostCard
                       post={p1}
                       viewMode="grid"
+                      priority={cIdx === 0}
                       className="w-full h-full max-w-none flex flex-col justify-between"
                       onSelectPost={onSelectPost}
                       onSelectBusiness={onSelectBusiness}
@@ -129,6 +131,7 @@ export const AsymmetricalGridView: React.FC<AsymmetricalGridViewProps> = ({
                       post={p3}
                       viewMode="grid"
                       cardVariant="tall"
+                      priority={cIdx === 0}
                       className="w-full h-full max-w-none flex flex-col justify-between"
                       onSelectPost={onSelectPost}
                       onSelectBusiness={onSelectBusiness}
@@ -140,6 +143,7 @@ export const AsymmetricalGridView: React.FC<AsymmetricalGridViewProps> = ({
                     <PostCard
                       post={p2}
                       viewMode="grid"
+                      priority={false}
                       className="w-full h-full max-w-none flex flex-col justify-between"
                       onSelectPost={onSelectPost}
                       onSelectBusiness={onSelectBusiness}
@@ -196,6 +200,7 @@ export const AsymmetricalGridView: React.FC<AsymmetricalGridViewProps> = ({
                         post={p0}
                         viewMode="grid"
                         cardVariant="tall"
+                        priority={cIdx === 0}
                         className="w-full h-full max-w-none flex flex-col justify-between"
                         onSelectPost={onSelectPost}
                         onSelectBusiness={onSelectBusiness}
@@ -206,6 +211,7 @@ export const AsymmetricalGridView: React.FC<AsymmetricalGridViewProps> = ({
                       <PostCard
                         post={p1}
                         viewMode="grid"
+                        priority={cIdx === 0}
                         className="w-full h-full max-w-none flex flex-col justify-between"
                         onSelectPost={onSelectPost}
                         onSelectBusiness={onSelectBusiness}
@@ -216,6 +222,7 @@ export const AsymmetricalGridView: React.FC<AsymmetricalGridViewProps> = ({
                       <PostCard
                         post={p2}
                         viewMode="grid"
+                        priority={false}
                         className="w-full h-full max-w-none flex flex-col justify-between"
                         onSelectPost={onSelectPost}
                         onSelectBusiness={onSelectBusiness}
@@ -229,6 +236,7 @@ export const AsymmetricalGridView: React.FC<AsymmetricalGridViewProps> = ({
                       post={p3}
                       viewMode="list"
                       cardVariant="hero"
+                      priority={false}
                       className="w-full max-w-none"
                       onSelectPost={onSelectPost}
                       onSelectBusiness={onSelectBusiness}
@@ -308,6 +316,7 @@ export const AsymmetricalGridView: React.FC<AsymmetricalGridViewProps> = ({
                       <PostCard
                         post={p0}
                         viewMode="grid"
+                        priority={cIdx === 0}
                         className="w-full h-full max-w-none"
                         onSelectPost={onSelectPost}
                         onSelectBusiness={onSelectBusiness}
@@ -318,6 +327,7 @@ export const AsymmetricalGridView: React.FC<AsymmetricalGridViewProps> = ({
                         post={p1}
                         viewMode="grid"
                         cardVariant="tall"
+                        priority={cIdx === 0}
                         className="w-full h-full max-w-none"
                         onSelectPost={onSelectPost}
                         onSelectBusiness={onSelectBusiness}
@@ -327,6 +337,7 @@ export const AsymmetricalGridView: React.FC<AsymmetricalGridViewProps> = ({
                       <PostCard
                         post={p2}
                         viewMode="grid"
+                        priority={false}
                         className="w-full h-full max-w-none"
                         onSelectPost={onSelectPost}
                         onSelectBusiness={onSelectBusiness}
@@ -341,6 +352,7 @@ export const AsymmetricalGridView: React.FC<AsymmetricalGridViewProps> = ({
                         post={p3}
                         viewMode="list"
                         cardVariant="hero"
+                        priority={false}
                         className="w-full max-w-none"
                         onSelectPost={onSelectPost}
                         onSelectBusiness={onSelectBusiness}
@@ -356,6 +368,7 @@ export const AsymmetricalGridView: React.FC<AsymmetricalGridViewProps> = ({
                           post={p4}
                           viewMode="grid"
                           cardVariant="tall"
+                          priority={false}
                           className="w-full h-full max-w-none"
                           onSelectPost={onSelectPost}
                           onSelectBusiness={onSelectBusiness}
@@ -365,6 +378,7 @@ export const AsymmetricalGridView: React.FC<AsymmetricalGridViewProps> = ({
                         <PostCard
                           post={p5 || getP(0)}
                           viewMode="grid"
+                          priority={false}
                           className="w-full h-full max-w-none"
                           onSelectPost={onSelectPost}
                           onSelectBusiness={onSelectBusiness}
@@ -374,6 +388,7 @@ export const AsymmetricalGridView: React.FC<AsymmetricalGridViewProps> = ({
                         <PostCard
                           post={getP(cIdx * 6 + 6)}
                           viewMode="grid"
+                          priority={false}
                           className="w-full h-full max-w-none"
                           onSelectPost={onSelectPost}
                           onSelectBusiness={onSelectBusiness}
@@ -425,6 +440,7 @@ export const AsymmetricalGridView: React.FC<AsymmetricalGridViewProps> = ({
                       post={p0}
                       viewMode="grid"
                       cardVariant="tall"
+                      priority={cIdx === 0}
                       className="w-full h-full max-w-none flex flex-col justify-between"
                       onSelectPost={onSelectPost}
                       onSelectBusiness={onSelectBusiness}
@@ -436,6 +452,7 @@ export const AsymmetricalGridView: React.FC<AsymmetricalGridViewProps> = ({
                     <PostCard
                       post={p1}
                       viewMode="grid"
+                      priority={cIdx === 0}
                       className="w-full h-full max-w-none flex flex-col justify-between"
                       onSelectPost={onSelectPost}
                       onSelectBusiness={onSelectBusiness}
@@ -447,6 +464,7 @@ export const AsymmetricalGridView: React.FC<AsymmetricalGridViewProps> = ({
                     <PostCard
                       post={p2}
                       viewMode="grid"
+                      priority={false}
                       className="w-full h-full max-w-none flex flex-col justify-between"
                       onSelectPost={onSelectPost}
                       onSelectBusiness={onSelectBusiness}
@@ -459,6 +477,7 @@ export const AsymmetricalGridView: React.FC<AsymmetricalGridViewProps> = ({
                       post={p3}
                       viewMode="list"
                       cardVariant="hero"
+                      priority={false}
                       className="w-full max-w-none"
                       onSelectPost={onSelectPost}
                       onSelectBusiness={onSelectBusiness}

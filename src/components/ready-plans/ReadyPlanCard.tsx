@@ -10,6 +10,7 @@ export interface ReadyPlanCardProps {
   onClick: () => void;
   className?: string;
   style?: React.CSSProperties;
+  priority?: boolean;
 }
 
 export const ReadyPlanCard: React.FC<ReadyPlanCardProps> = ({
@@ -18,6 +19,7 @@ export const ReadyPlanCard: React.FC<ReadyPlanCardProps> = ({
   onClick,
   className = '',
   style,
+  priority = false,
 }) => {
   const planPosts = resolvePlanPosts(plan, posts);
 
@@ -34,6 +36,8 @@ export const ReadyPlanCard: React.FC<ReadyPlanCardProps> = ({
           posts={planPosts}
           bgLayout={plan.bgLayout}
           theme={plan.theme}
+          priority={priority}
+          targetWidth={380}
           imageClassName="group-hover:scale-105 transition-transform duration-500"
         />
       </div>

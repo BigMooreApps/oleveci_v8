@@ -51,6 +51,29 @@ export const getAvatarUrl = (url?: string | null): string => {
 };
 
 /**
+ * Mobile-optimized grid card image size (~160px - 200px CSS width, 380px at 2x DPR)
+ * Cuts mobile payload by ~80% compared to full desktop images.
+ */
+export const getMobileCardImageUrl = (url?: string | null, width: number = 380, quality: number = 70): string => {
+  return optimizeImageUrl(url, width, quality);
+};
+
+/**
+ * Ultra-lightweight thumbnail for blurred ambient backdrops (48px, quality 30, <1KB)
+ */
+export const getBlurBackdropUrl = (url?: string | null): string => {
+  return optimizeImageUrl(url, 48, 30);
+};
+
+/**
+ * Proportional slice size for multi-column itinerary card covers (horizontal, columns3, grid)
+ */
+export const getItinerarySliceImageUrl = (url?: string | null, sliceCount: number = 1): string => {
+  const targetWidth = sliceCount <= 1 ? 380 : Math.max(140, Math.round(380 / sliceCount));
+  return optimizeImageUrl(url, targetWidth, 70);
+};
+
+/**
  * Feed card thumbnail size (320px - 480px display)
  */
 export const getFeedCardImageUrl = (url?: string | null): string => {
@@ -63,3 +86,4 @@ export const getFeedCardImageUrl = (url?: string | null): string => {
 export const getReelPosterUrl = (url?: string | null): string => {
   return optimizeImageUrl(url, 800, 75);
 };
+

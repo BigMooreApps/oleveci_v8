@@ -23,7 +23,7 @@ import {
   Pencil,
 } from 'lucide-react';
 import { Post } from '../types';
-import { optimizeImageUrl } from '../utils/imageOptimization';
+import { optimizeImageUrl, getBlurBackdropUrl } from '../utils/imageOptimization';
 
 export type CardTheme =
   | 'dark_vip'
@@ -289,6 +289,8 @@ export interface PlanBackgroundImagesProps {
   selectedPhotoIndex?: number;
   className?: string;
   imageClassName?: string;
+  priority?: boolean;
+  targetWidth?: number;
 }
 
 export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
@@ -299,8 +301,16 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
   selectedPhotoIndex = 0,
   className = '',
   imageClassName = '',
+  priority = false,
+  targetWidth,
 }) => {
-  const getOptImg = (url?: string | null) => optimizeImageUrl(url, 640, 75);
+  const targetW = targetWidth || 380;
+  const loadingAttr: 'eager' | 'lazy' = priority ? 'eager' : 'lazy';
+  const fetchPriorityAttr: 'high' | 'auto' = priority ? 'high' : 'auto';
+
+  const getOptImg = (url?: string | null, customW?: number) =>
+    optimizeImageUrl(url, customW || targetW, 70);
+
   const p1 = getOptImg(posts[0]?.imageUrl);
   const p2 = getOptImg(posts[1]?.imageUrl || posts[0]?.imageUrl);
   const p3 = getOptImg(posts[2]?.imageUrl || posts[0]?.imageUrl);
@@ -333,10 +343,13 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
                 <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-10 h-3 bg-amber-200/80 backdrop-blur-xs rounded-xs shadow-xs border border-amber-300/50 rotate-1" />
                 <div className="w-full h-24 sm:h-28 overflow-hidden rounded-xs bg-slate-900">
                   <img
-                    src={getOptImg(post.imageUrl)}
+                    src={getOptImg(post.imageUrl, 220)}
                     alt=""
                     referrerPolicy="no-referrer"
                     crossOrigin="anonymous"
+                    loading={loadingAttr}
+                    decoding="async"
+                    fetchPriority={fetchPriorityAttr}
                     className={`w-full h-full object-cover ${imageClassName}`}
                   />
                 </div>
@@ -355,6 +368,7 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
 
   // 1. Corte Diagonal (Angled Geometric Split)
   if (bgLayout === 'diagonal') {
+    const diagW = Math.round(targetW * 0.65);
     return (
       <div className={`absolute inset-0 bg-black overflow-hidden select-none ${className}`}>
         <div
@@ -362,10 +376,13 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
           style={{ clipPath: 'polygon(0 0, 62% 0, 38% 100%, 0 100%)' }}
         >
           <img
-            src={p1}
+            src={getOptImg(posts[0]?.imageUrl, diagW)}
             alt=""
             referrerPolicy="no-referrer"
             crossOrigin="anonymous"
+            loading={loadingAttr}
+            decoding="async"
+            fetchPriority={fetchPriorityAttr}
             className={`w-full h-full object-cover filter brightness-95 contrast-105 scale-105 ${imageClassName}`}
           />
         </div>
@@ -374,10 +391,13 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
           style={{ clipPath: 'polygon(62% 0, 100% 0, 100% 100%, 38% 100%)' }}
         >
           <img
-            src={p2}
+            src={getOptImg(posts[1]?.imageUrl || posts[0]?.imageUrl, diagW)}
             alt=""
             referrerPolicy="no-referrer"
             crossOrigin="anonymous"
+            loading={loadingAttr}
+            decoding="async"
+            fetchPriority={fetchPriorityAttr}
             className={`w-full h-full object-cover filter brightness-95 contrast-105 scale-105 ${imageClassName}`}
           />
         </div>
@@ -395,6 +415,7 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
   // 2. Horizontal: Lado a Lado (Columns Split)
   if (bgLayout === 'horizontal') {
     const displayPosts = posts.slice(0, Math.min(posts.length, 3));
+    const sliceW = Math.round(targetW / Math.max(1, displayPosts.length));
     return (
       <div className={`absolute inset-0 bg-black flex overflow-hidden ${className}`}>
         {displayPosts.map((post, idx) => (
@@ -403,10 +424,13 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
             className="h-full flex-1 overflow-hidden relative border-r border-white/25 last:border-r-0"
           >
             <img
-              src={getOptImg(post.imageUrl)}
+              src={getOptImg(post.imageUrl, sliceW)}
               alt=""
               referrerPolicy="no-referrer"
               crossOrigin="anonymous"
+              loading={loadingAttr}
+              decoding="async"
+              fetchPriority={fetchPriorityAttr}
               className={`w-full h-full object-cover filter brightness-95 contrast-105 ${imageClassName}`}
             />
           </div>
@@ -425,6 +449,9 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
             alt=""
             referrerPolicy="no-referrer"
             crossOrigin="anonymous"
+            loading={loadingAttr}
+            decoding="async"
+            fetchPriority={fetchPriorityAttr}
             className={`w-full h-full object-cover filter brightness-95 contrast-105 ${imageClassName}`}
           />
         </div>
@@ -434,6 +461,9 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
             alt=""
             referrerPolicy="no-referrer"
             crossOrigin="anonymous"
+            loading={loadingAttr}
+            decoding="async"
+            fetchPriority={fetchPriorityAttr}
             className={`w-full h-full object-cover filter brightness-95 contrast-105 ${imageClassName}`}
           />
         </div>
@@ -443,32 +473,42 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
 
   // 4. Tríptico: 3 Columnas Verticales (Columns3)
   if (bgLayout === 'columns3') {
+    const colW = Math.max(130, Math.round(targetW / 3));
     return (
       <div className={`absolute inset-0 bg-black flex overflow-hidden ${className}`}>
         <div className="h-full flex-1 overflow-hidden border-r border-white/25">
           <img
-            src={p1}
+            src={getOptImg(posts[0]?.imageUrl, colW)}
             alt=""
             referrerPolicy="no-referrer"
             crossOrigin="anonymous"
+            loading={loadingAttr}
+            decoding="async"
+            fetchPriority={fetchPriorityAttr}
             className={`w-full h-full object-cover filter brightness-95 contrast-105 ${imageClassName}`}
           />
         </div>
         <div className="h-full flex-1 overflow-hidden border-r border-white/25">
           <img
-            src={p2}
+            src={getOptImg(posts[1]?.imageUrl || posts[0]?.imageUrl, colW)}
             alt=""
             referrerPolicy="no-referrer"
             crossOrigin="anonymous"
+            loading={loadingAttr}
+            decoding="async"
+            fetchPriority={fetchPriorityAttr}
             className={`w-full h-full object-cover filter brightness-95 contrast-105 ${imageClassName}`}
           />
         </div>
         <div className="h-full flex-1 overflow-hidden">
           <img
-            src={p3}
+            src={getOptImg(posts[2]?.imageUrl || posts[0]?.imageUrl, colW)}
             alt=""
             referrerPolicy="no-referrer"
             crossOrigin="anonymous"
+            loading={loadingAttr}
+            decoding="async"
+            fetchPriority={fetchPriorityAttr}
             className={`w-full h-full object-cover filter brightness-95 contrast-105 ${imageClassName}`}
           />
         </div>
@@ -486,6 +526,9 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
             alt=""
             referrerPolicy="no-referrer"
             crossOrigin="anonymous"
+            loading={loadingAttr}
+            decoding="async"
+            fetchPriority={fetchPriorityAttr}
             className={`w-full h-full object-cover filter brightness-95 contrast-105 ${imageClassName}`}
           />
         </div>
@@ -495,6 +538,9 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
             alt=""
             referrerPolicy="no-referrer"
             crossOrigin="anonymous"
+            loading={loadingAttr}
+            decoding="async"
+            fetchPriority={fetchPriorityAttr}
             className={`w-full h-full object-cover filter brightness-95 contrast-105 ${imageClassName}`}
           />
         </div>
@@ -504,6 +550,9 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
             alt=""
             referrerPolicy="no-referrer"
             crossOrigin="anonymous"
+            loading={loadingAttr}
+            decoding="async"
+            fetchPriority={fetchPriorityAttr}
             className={`w-full h-full object-cover filter brightness-95 contrast-105 ${imageClassName}`}
           />
         </div>
@@ -522,6 +571,9 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
           alt=""
           referrerPolicy="no-referrer"
           crossOrigin="anonymous"
+          loading={loadingAttr}
+          decoding="async"
+          fetchPriority={fetchPriorityAttr}
           className={`w-full h-full object-cover filter brightness-90 contrast-105 ${imageClassName}`}
         />
         {subPhotos.length > 0 && (
@@ -532,10 +584,13 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
                 className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden border-2 border-white shadow-xl bg-black"
               >
                 <img
-                  src={getOptImg(sp.imageUrl)}
+                  src={getOptImg(sp.imageUrl, 140)}
                   alt=""
                   referrerPolicy="no-referrer"
                   crossOrigin="anonymous"
+                  loading={loadingAttr}
+                  decoding="async"
+                  fetchPriority={fetchPriorityAttr}
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -550,12 +605,14 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
   if (bgLayout === 'portal') {
     return (
       <div className={`absolute inset-0 bg-[#0c0a09] flex items-center justify-center p-3 overflow-hidden ${className}`}>
-        {/* Ambient blurred backdrop */}
+        {/* Ambient blurred backdrop (Ultra-light 48px) */}
         <img
-          src={p1}
+          src={getBlurBackdropUrl(posts[0]?.imageUrl)}
           alt=""
           referrerPolicy="no-referrer"
           crossOrigin="anonymous"
+          loading="lazy"
+          decoding="async"
           className="absolute inset-0 w-full h-full object-cover blur-xl opacity-35 scale-110"
         />
         <div className="relative w-full h-full rounded-t-[70px] rounded-b-2xl overflow-hidden border-2 border-white/30 shadow-2xl bg-black">
@@ -564,15 +621,21 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
             alt=""
             referrerPolicy="no-referrer"
             crossOrigin="anonymous"
+            loading={loadingAttr}
+            decoding="async"
+            fetchPriority={fetchPriorityAttr}
             className={`w-full h-full object-cover filter brightness-95 contrast-105 ${imageClassName}`}
           />
           {p2 && (
             <div className="absolute -bottom-2 -right-2 w-18 h-18 sm:w-20 sm:h-20 rounded-full border-2 border-white/90 overflow-hidden shadow-2xl z-10">
               <img
-                src={p2}
+                src={getOptImg(posts[1]?.imageUrl, 160)}
                 alt=""
                 referrerPolicy="no-referrer"
                 crossOrigin="anonymous"
+                loading={loadingAttr}
+                decoding="async"
+                fetchPriority={fetchPriorityAttr}
                 className="w-full h-full object-cover"
               />
             </div>
@@ -586,12 +649,14 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
   if (bgLayout === 'circle') {
     return (
       <div className={`absolute inset-0 bg-[#09090b] flex items-center justify-center overflow-hidden ${className}`}>
-        {/* Ambient blurred backdrop */}
+        {/* Ambient blurred backdrop (Ultra-light 48px) */}
         <img
-          src={p1}
+          src={getBlurBackdropUrl(posts[0]?.imageUrl)}
           alt=""
           referrerPolicy="no-referrer"
           crossOrigin="anonymous"
+          loading="lazy"
+          decoding="async"
           className="absolute inset-0 w-full h-full object-cover blur-lg opacity-40 scale-115"
         />
         <div className="relative w-34 h-34 sm:w-40 sm:h-40 rounded-full border-4 border-white/90 shadow-2xl overflow-hidden z-10 bg-black">
@@ -600,16 +665,22 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
             alt=""
             referrerPolicy="no-referrer"
             crossOrigin="anonymous"
+            loading={loadingAttr}
+            decoding="async"
+            fetchPriority={fetchPriorityAttr}
             className={`w-full h-full object-cover filter brightness-95 contrast-105 ${imageClassName}`}
           />
         </div>
         {p2 && (
           <div className="absolute bottom-3 right-5 w-14 h-14 rounded-full border-2 border-white shadow-xl overflow-hidden z-20 bg-black">
             <img
-              src={p2}
+              src={getOptImg(posts[1]?.imageUrl, 140)}
               alt=""
               referrerPolicy="no-referrer"
               crossOrigin="anonymous"
+              loading={loadingAttr}
+              decoding="async"
+              fetchPriority={fetchPriorityAttr}
               className="w-full h-full object-cover"
             />
           </div>
@@ -620,24 +691,31 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
 
   // 9. Grid / Bento Cuadrícula
   if (bgLayout === 'grid') {
+    const halfW = Math.round(targetW / 2);
     if (posts.length === 2) {
       return (
         <div className={`absolute inset-0 bg-black flex overflow-hidden ${className}`}>
           <div className="h-full flex-1 overflow-hidden border-r border-white/25">
             <img
-              src={getOptImg(posts[0]?.imageUrl)}
+              src={getOptImg(posts[0]?.imageUrl, halfW)}
               alt=""
               referrerPolicy="no-referrer"
               crossOrigin="anonymous"
+              loading={loadingAttr}
+              decoding="async"
+              fetchPriority={fetchPriorityAttr}
               className={`w-full h-full object-cover ${imageClassName}`}
             />
           </div>
           <div className="h-full flex-1 overflow-hidden">
             <img
-              src={getOptImg(posts[1]?.imageUrl)}
+              src={getOptImg(posts[1]?.imageUrl, halfW)}
               alt=""
               referrerPolicy="no-referrer"
               crossOrigin="anonymous"
+              loading={loadingAttr}
+              decoding="async"
+              fetchPriority={fetchPriorityAttr}
               className={`w-full h-full object-cover ${imageClassName}`}
             />
           </div>
@@ -650,29 +728,38 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
         <div className={`absolute inset-0 bg-black flex overflow-hidden ${className}`}>
           <div className="w-1/2 h-full border-r border-white/25 overflow-hidden">
             <img
-              src={getOptImg(posts[0]?.imageUrl)}
+              src={getOptImg(posts[0]?.imageUrl, halfW)}
               alt=""
               referrerPolicy="no-referrer"
               crossOrigin="anonymous"
+              loading={loadingAttr}
+              decoding="async"
+              fetchPriority={fetchPriorityAttr}
               className={`w-full h-full object-cover ${imageClassName}`}
             />
           </div>
           <div className="w-1/2 h-full flex flex-col overflow-hidden">
             <div className="w-full h-1/2 border-b border-white/25 overflow-hidden">
               <img
-                src={getOptImg(posts[1]?.imageUrl)}
+                src={getOptImg(posts[1]?.imageUrl, halfW)}
                 alt=""
                 referrerPolicy="no-referrer"
                 crossOrigin="anonymous"
+                loading={loadingAttr}
+                decoding="async"
+                fetchPriority={fetchPriorityAttr}
                 className={`w-full h-full object-cover ${imageClassName}`}
               />
             </div>
             <div className="w-full h-1/2 overflow-hidden">
               <img
-                src={getOptImg(posts[2]?.imageUrl)}
+                src={getOptImg(posts[2]?.imageUrl, halfW)}
                 alt=""
                 referrerPolicy="no-referrer"
                 crossOrigin="anonymous"
+                loading={loadingAttr}
+                decoding="async"
+                fetchPriority={fetchPriorityAttr}
                 className={`w-full h-full object-cover ${imageClassName}`}
               />
             </div>
@@ -686,10 +773,13 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
         {posts.slice(0, 4).map((post, idx) => (
           <div key={post.id || idx} className="overflow-hidden border border-white/20">
             <img
-              src={getOptImg(post.imageUrl)}
+              src={getOptImg(post.imageUrl, halfW)}
               alt=""
               referrerPolicy="no-referrer"
               crossOrigin="anonymous"
+              loading={loadingAttr}
+              decoding="async"
+              fetchPriority={fetchPriorityAttr}
               className={`w-full h-full object-cover ${imageClassName}`}
             />
           </div>
@@ -707,6 +797,9 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
         alt=""
         referrerPolicy="no-referrer"
         crossOrigin="anonymous"
+        loading={loadingAttr}
+        decoding="async"
+        fetchPriority={fetchPriorityAttr}
         className={`w-full h-full object-cover filter brightness-95 contrast-105 ${imageClassName}`}
       />
     </div>

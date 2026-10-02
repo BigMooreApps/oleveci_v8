@@ -4,7 +4,7 @@ import { Post } from '../types';
 import { useApp } from '../context/AppContext';
 import { Clock, Calendar, Play, Film } from 'lucide-react';
 import { parseVideoUrl } from '../utils/videoHelper';
-import { getFeedCardImageUrl } from '../utils/imageOptimization';
+import { getFeedCardImageUrl, getMobileCardImageUrl, getBlurBackdropUrl } from '../utils/imageOptimization';
 
 interface PostCardProps {
   post: Post;
@@ -16,6 +16,7 @@ interface PostCardProps {
   onToggleFavorite?: (postId: string) => void;
   className?: string;
   cardVariant?: 'default' | 'hero' | 'tall';
+  priority?: boolean;
 }
 
 export const PostCard: React.FC<PostCardProps> = ({
@@ -28,6 +29,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   onToggleFavorite: propToggleFavorite,
   className = '',
   cardVariant = 'default',
+  priority = false,
 }) => {
   const {
     trackInteraction,
@@ -137,7 +139,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                         ? `${post.imagePosition.x}% ${post.imagePosition.y}%`
                         : '50% 50%',
                     }}
-                    src={getFeedCardImageUrl(post.imageUrl)}
+                    src={getBlurBackdropUrl(post.imageUrl)}
                     referrerPolicy="no-referrer"
                     loading="lazy"
                     decoding="async"
@@ -160,10 +162,11 @@ export const PostCard: React.FC<PostCardProps> = ({
                     : '50% 50%',
                   filter: post.imageFilter && post.imageFilter !== 'none' ? post.imageFilter : undefined,
                 }}
-                src={getFeedCardImageUrl(post.imageUrl)}
+                src={getMobileCardImageUrl(post.imageUrl, 380, 70)}
                 referrerPolicy="no-referrer"
-                loading="lazy"
+                loading={priority ? 'eager' : 'lazy'}
                 decoding="async"
+                fetchPriority={priority ? 'high' : 'auto'}
               />
             </>
           ) : (
@@ -290,7 +293,7 @@ export const PostCard: React.FC<PostCardProps> = ({
           </div>
         ) : post.imageUrl ? (
           <>
-            {/* Ambient backdrop when contained or scaled down to fill predefined space */}
+            {/* Ambient backdrop when contained or scaled down to fill predefined space (Ultra-light 48px) */}
             {(post.imageFit === 'contain' || (post.imageScale && post.imageScale < 1)) && (
               <div className="absolute inset-0 overflow-hidden pointer-events-none bg-slate-950">
                 <img
@@ -302,7 +305,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                       : '50% 50%',
                     filter: post.imageFilter && post.imageFilter !== 'none' ? `${post.imageFilter} blur(24px)` : 'blur(24px)',
                   }}
-                  src={getFeedCardImageUrl(post.imageUrl)}
+                  src={getBlurBackdropUrl(post.imageUrl)}
                   referrerPolicy="no-referrer"
                   loading="lazy"
                   decoding="async"
@@ -325,10 +328,11 @@ export const PostCard: React.FC<PostCardProps> = ({
                   : '50% 50%',
                 filter: post.imageFilter && post.imageFilter !== 'none' ? post.imageFilter : undefined,
               }}
-              src={getFeedCardImageUrl(post.imageUrl)}
+              src={isGrid ? getMobileCardImageUrl(post.imageUrl, 380, 70) : getFeedCardImageUrl(post.imageUrl)}
               referrerPolicy="no-referrer"
-              loading="lazy"
+              loading={priority ? 'eager' : 'lazy'}
               decoding="async"
+              fetchPriority={priority ? 'high' : 'auto'}
             />
           </>
         ) : (

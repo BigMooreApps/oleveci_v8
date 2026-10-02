@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Business, Post } from '../types';
 import { useApp } from '../context/AppContext';
 import { FilterModal } from './FilterModal';
-import { getAvatarUrl, getFeedCardImageUrl } from '../utils/imageOptimization';
+import { getAvatarUrl, getFeedCardImageUrl, getMobileCardImageUrl } from '../utils/imageOptimization';
 import {
   Search,
   MapPin,
@@ -262,7 +262,7 @@ export const BusinessDirectory: React.FC<BusinessDirectoryProps> = ({
         viewMode === 'grid' ? (
           /* GRID VIEW: 2 columns */
           <div className="grid grid-cols-2 gap-2 sm:gap-4">
-            {filteredBusinesses.map((biz) => {
+            {filteredBusinesses.map((biz, idx) => {
               const distance = getDistanceKm(biz.coordinates);
               const activePosts = getActivePostCount(biz.id);
               const categoryObj = categories.find((c) => c.id === biz.categoryId);
@@ -277,11 +277,12 @@ export const BusinessDirectory: React.FC<BusinessDirectoryProps> = ({
                   <div className="relative h-24 sm:h-32 w-full overflow-hidden bg-slate-100">
                     {biz.coverImage ? (
                       <img
-                        src={getFeedCardImageUrl(biz.coverImage)}
+                        src={getMobileCardImageUrl(biz.coverImage, 380, 70)}
                         alt={biz.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        loading="lazy"
+                        loading={idx < 2 ? 'eager' : 'lazy'}
                         decoding="async"
+                        fetchPriority={idx < 2 ? 'high' : 'auto'}
                       />
                     ) : (
                       <div className="w-full h-full bg-slate-800" />
@@ -321,7 +322,7 @@ export const BusinessDirectory: React.FC<BusinessDirectoryProps> = ({
                             src={getAvatarUrl(biz.logo)}
                             alt={biz.name}
                             className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl object-cover border-2 border-white shadow-md bg-white shrink-0 -mt-4 sm:-mt-5 relative z-10"
-                            loading="lazy"
+                            loading={idx < 2 ? 'eager' : 'lazy'}
                             decoding="async"
                           />
                         ) : (
@@ -370,7 +371,7 @@ export const BusinessDirectory: React.FC<BusinessDirectoryProps> = ({
         ) : (
           /* LIST VIEW: Optimized, clean & practical mobile-first list */
           <div className="flex flex-col gap-3">
-            {filteredBusinesses.map((biz) => {
+            {filteredBusinesses.map((biz, idx) => {
               const distance = getDistanceKm(biz.coordinates);
               const activePosts = getActivePostCount(biz.id);
               const categoryObj = categories.find((c) => c.id === biz.categoryId);
@@ -391,8 +392,9 @@ export const BusinessDirectory: React.FC<BusinessDirectoryProps> = ({
                           src={getAvatarUrl(biz.logo)}
                           alt={biz.name}
                           className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl object-cover border border-slate-200 shadow-xs bg-slate-50"
-                          loading="lazy"
+                          loading={idx < 3 ? 'eager' : 'lazy'}
                           decoding="async"
+                          fetchPriority={idx < 3 ? 'high' : 'auto'}
                         />
                       ) : (
                         <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-[#041f5e] text-white flex items-center justify-center font-bold text-base border border-slate-200 shadow-xs">
