@@ -23,6 +23,7 @@ import {
   Pencil,
 } from 'lucide-react';
 import { Post } from '../types';
+import { optimizeImageUrl } from '../utils/imageOptimization';
 
 export type CardTheme =
   | 'dark_vip'
@@ -299,6 +300,11 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
   className = '',
   imageClassName = '',
 }) => {
+  const getOptImg = (url?: string | null) => optimizeImageUrl(url, 640, 75);
+  const p1 = getOptImg(posts[0]?.imageUrl);
+  const p2 = getOptImg(posts[1]?.imageUrl || posts[0]?.imageUrl);
+  const p3 = getOptImg(posts[2]?.imageUrl || posts[0]?.imageUrl);
+
   if (posts.length === 0) {
     return (
       <div className={`absolute inset-0 bg-gradient-to-br ${theme?.bgGradient || 'from-slate-900 to-slate-950'} flex items-center justify-center ${className}`}>
@@ -327,7 +333,7 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
                 <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-10 h-3 bg-amber-200/80 backdrop-blur-xs rounded-xs shadow-xs border border-amber-300/50 rotate-1" />
                 <div className="w-full h-24 sm:h-28 overflow-hidden rounded-xs bg-slate-900">
                   <img
-                    src={post.imageUrl}
+                    src={getOptImg(post.imageUrl)}
                     alt=""
                     referrerPolicy="no-referrer"
                     crossOrigin="anonymous"
@@ -349,8 +355,6 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
 
   // 1. Corte Diagonal (Angled Geometric Split)
   if (bgLayout === 'diagonal') {
-    const p1 = posts[0]?.imageUrl;
-    const p2 = posts[1]?.imageUrl || p1;
     return (
       <div className={`absolute inset-0 bg-black overflow-hidden select-none ${className}`}>
         <div
@@ -399,7 +403,7 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
             className="h-full flex-1 overflow-hidden relative border-r border-white/25 last:border-r-0"
           >
             <img
-              src={post.imageUrl}
+              src={getOptImg(post.imageUrl)}
               alt=""
               referrerPolicy="no-referrer"
               crossOrigin="anonymous"
@@ -413,8 +417,6 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
 
   // 3. Vertical: Arriba y Abajo (Horizontal Rows Split)
   if (bgLayout === 'vertical') {
-    const p1 = posts[0]?.imageUrl;
-    const p2 = posts[1]?.imageUrl || p1;
     return (
       <div className={`absolute inset-0 bg-black flex flex-col overflow-hidden ${className}`}>
         <div className="w-full flex-1 overflow-hidden border-b border-white/25">
@@ -441,9 +443,6 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
 
   // 4. Tríptico: 3 Columnas Verticales (Columns3)
   if (bgLayout === 'columns3') {
-    const p1 = posts[0]?.imageUrl;
-    const p2 = posts[1]?.imageUrl || p1;
-    const p3 = posts[2]?.imageUrl || p1;
     return (
       <div className={`absolute inset-0 bg-black flex overflow-hidden ${className}`}>
         <div className="h-full flex-1 overflow-hidden border-r border-white/25">
@@ -479,9 +478,6 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
 
   // 5. 3 Franjas Horizontales (Rows3)
   if (bgLayout === 'rows3') {
-    const p1 = posts[0]?.imageUrl;
-    const p2 = posts[1]?.imageUrl || p1;
-    const p3 = posts[2]?.imageUrl || p1;
     return (
       <div className={`absolute inset-0 bg-black flex flex-col overflow-hidden ${className}`}>
         <div className="w-full flex-1 overflow-hidden border-b border-white/25">
@@ -517,7 +513,7 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
 
   // 6. Mosaico Asimétrico (Asymmetric 70/30)
   if (bgLayout === 'asymmetric') {
-    const heroPhoto = posts[0]?.imageUrl;
+    const heroPhoto = p1;
     const subPhotos = posts.slice(1, 3);
     return (
       <div className={`absolute inset-0 bg-black overflow-hidden ${className}`}>
@@ -536,7 +532,7 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
                 className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden border-2 border-white shadow-xl bg-black"
               >
                 <img
-                  src={sp.imageUrl}
+                  src={getOptImg(sp.imageUrl)}
                   alt=""
                   referrerPolicy="no-referrer"
                   crossOrigin="anonymous"
@@ -552,8 +548,6 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
 
   // 7. Arco Editorial (Portal Window)
   if (bgLayout === 'portal') {
-    const p1 = posts[0]?.imageUrl;
-    const p2 = posts[1]?.imageUrl;
     return (
       <div className={`absolute inset-0 bg-[#0c0a09] flex items-center justify-center p-3 overflow-hidden ${className}`}>
         {/* Ambient blurred backdrop */}
@@ -590,8 +584,6 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
 
   // 8. Lente Circular Central (Circle Medallion)
   if (bgLayout === 'circle') {
-    const p1 = posts[0]?.imageUrl;
-    const p2 = posts[1]?.imageUrl;
     return (
       <div className={`absolute inset-0 bg-[#09090b] flex items-center justify-center overflow-hidden ${className}`}>
         {/* Ambient blurred backdrop */}
@@ -633,7 +625,7 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
         <div className={`absolute inset-0 bg-black flex overflow-hidden ${className}`}>
           <div className="h-full flex-1 overflow-hidden border-r border-white/25">
             <img
-              src={posts[0]?.imageUrl}
+              src={getOptImg(posts[0]?.imageUrl)}
               alt=""
               referrerPolicy="no-referrer"
               crossOrigin="anonymous"
@@ -642,7 +634,7 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
           </div>
           <div className="h-full flex-1 overflow-hidden">
             <img
-              src={posts[1]?.imageUrl}
+              src={getOptImg(posts[1]?.imageUrl)}
               alt=""
               referrerPolicy="no-referrer"
               crossOrigin="anonymous"
@@ -658,7 +650,7 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
         <div className={`absolute inset-0 bg-black flex overflow-hidden ${className}`}>
           <div className="w-1/2 h-full border-r border-white/25 overflow-hidden">
             <img
-              src={posts[0]?.imageUrl}
+              src={getOptImg(posts[0]?.imageUrl)}
               alt=""
               referrerPolicy="no-referrer"
               crossOrigin="anonymous"
@@ -668,7 +660,7 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
           <div className="w-1/2 h-full flex flex-col overflow-hidden">
             <div className="w-full h-1/2 border-b border-white/25 overflow-hidden">
               <img
-                src={posts[1]?.imageUrl}
+                src={getOptImg(posts[1]?.imageUrl)}
                 alt=""
                 referrerPolicy="no-referrer"
                 crossOrigin="anonymous"
@@ -677,7 +669,7 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
             </div>
             <div className="w-full h-1/2 overflow-hidden">
               <img
-                src={posts[2]?.imageUrl}
+                src={getOptImg(posts[2]?.imageUrl)}
                 alt=""
                 referrerPolicy="no-referrer"
                 crossOrigin="anonymous"
@@ -694,7 +686,7 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
         {posts.slice(0, 4).map((post, idx) => (
           <div key={post.id || idx} className="overflow-hidden border border-white/20">
             <img
-              src={post.imageUrl}
+              src={getOptImg(post.imageUrl)}
               alt=""
               referrerPolicy="no-referrer"
               crossOrigin="anonymous"
@@ -707,7 +699,7 @@ export const PlanBackgroundImages: React.FC<PlanBackgroundImagesProps> = ({
   }
 
   // 10. Default / 1 Photo / Cinematic
-  const activePhoto = posts[selectedPhotoIndex % posts.length]?.imageUrl || posts[0]?.imageUrl;
+  const activePhoto = getOptImg(posts[selectedPhotoIndex % posts.length]?.imageUrl || posts[0]?.imageUrl);
   return (
     <div className={`absolute inset-0 bg-black overflow-hidden ${className}`}>
       <img

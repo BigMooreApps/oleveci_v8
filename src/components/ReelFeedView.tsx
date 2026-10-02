@@ -59,6 +59,7 @@ interface ReelItemVideoProps {
   isMuted: boolean;
   preload?: 'auto' | 'metadata' | 'none';
   onTogglePlay: () => void;
+  isNearActive?: boolean;
 }
 
 const ReelItemVideo: React.FC<ReelItemVideoProps> = ({
@@ -69,6 +70,7 @@ const ReelItemVideo: React.FC<ReelItemVideoProps> = ({
   isMuted,
   preload = 'metadata',
   onTogglePlay,
+  isNearActive = false,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [showFeedback, setShowFeedback] = useState<'play' | 'pause' | null>(null);
@@ -137,7 +139,8 @@ const ReelItemVideo: React.FC<ReelItemVideoProps> = ({
           className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 pointer-events-none ${
             isVideoLoaded ? 'opacity-0' : 'opacity-100'
           }`}
-          loading="lazy"
+          loading={isCurrentActive || isNearActive ? 'eager' : 'lazy'}
+          decoding="async"
         />
       )}
 
@@ -216,6 +219,35 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
   const [selectedMapPost, setSelectedMapPost] = useState<Post | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const viewedPostsRef = useRef<Set<string>>(new Set());
+  const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
+  const preloadedUrlsRef = useRef<Set<string>>(new Set());
+
+  // Aggressively preload upcoming images in a sliding window (current - 1 to current + 4)
+  useEffect(() => {
+    if (!posts || posts.length === 0) return;
+    const startIndex = Math.max(0, activeIndex - 1);
+    const endIndex = Math.min(posts.length - 1, activeIndex + 4);
+
+    for (let i = startIndex; i <= endIndex; i++) {
+      const p = posts[i];
+      if (!p) continue;
+      const urls: string[] = [];
+      if (p.imageUrl) urls.push(getReelPosterUrl(p.imageUrl));
+      if (p.businessLogo) urls.push(getAvatarUrl(p.businessLogo));
+      if (p.isPlan && p.planStops) {
+        p.planStops.forEach((stop) => {
+          if (stop.imageUrl) urls.push(getReelPosterUrl(stop.imageUrl));
+        });
+      }
+      urls.forEach((url) => {
+        if (url && !preloadedUrlsRef.current.has(url)) {
+          preloadedUrlsRef.current.add(url);
+          const img = new Image();
+          img.src = url;
+        }
+      });
+    }
+  }, [activeIndex, posts]);
 
   // Track active slide with IntersectionObserver
   useEffect(() => {
@@ -542,7 +574,13 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
                       </div>
                     ) : (
                       <div className="relative w-full h-full bg-black flex items-center justify-center">
-                        <img src={post.imageUrl} alt={post.title} className="w-full h-full object-cover" />
+                        <img
+                          src={getReelPosterUrl(post.imageUrl)}
+                          alt={post.title}
+                          className="w-full h-full object-cover"
+                          loading={Math.abs(index - activeIndex) <= 2 ? 'eager' : 'lazy'}
+                          decoding="async"
+                        />
                       </div>
                     )
                   ) : (
@@ -552,6 +590,7 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
                         src={parsedVideo.directUrl || post.videoUrl || ''}
                         poster={getReelPosterUrl(post.imageUrl)}
                         isCurrentActive={isCurrentActive}
+                        isNearActive={Math.abs(index - activeIndex) <= 1}
                         isPlaying={isPlaying}
                         isMuted={isMuted}
                         preload={isCurrentActive ? 'auto' : 'metadata'}
@@ -563,30 +602,47 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
                           src={getReelPosterUrl(post.imageUrl)}
                           alt={post.title}
                           className="w-full h-full object-cover"
-                          loading="lazy"
+                          loading={Math.abs(index - activeIndex) <= 2 ? 'eager' : 'lazy'}
                           decoding="async"
                         />
                       </div>
                     )
                   )
                 ) : (
-                  // Image Media with ambient blur backdrop for letterboxed aspect ratios
-                  <div className="relative w-full h-full bg-black flex items-center justify-center overflow-hidden">
-                    {/* Ambient blurred backdrop */}
-                    <img
-                      src={getReelPosterUrl(post.imageUrl)}
-                      alt=""
-                      aria-hidden="true"
-                      className="absolute inset-0 w-full h-full object-cover filter blur-2xl scale-120 opacity-40 pointer-events-none"
-                      loading="lazy"
-                    />
+                  // Crisp image media with instant preloading, custom framing, and smooth skeleton
+                  <div className="relative w-full h-full bg-neutral-950 flex items-center justify-center overflow-hidden select-none">
+                    {/* Skeleton loader with subtle dark gradient and brand spinner */}
+                    <div
+                      className={`absolute inset-0 bg-gradient-to-b from-neutral-900 via-neutral-950 to-black transition-opacity duration-300 pointer-events-none flex flex-col items-center justify-center ${
+                        loadedImages[post.id] ? 'opacity-0' : 'opacity-100'
+                      }`}
+                    >
+                      <div className="w-10 h-10 rounded-full border border-white/10 bg-white/5 backdrop-blur-sm flex items-center justify-center">
+                        <div className="w-5 h-5 rounded-full border-2 border-cyan-400/40 border-t-cyan-400 animate-spin" />
+                      </div>
+                    </div>
+
                     {/* Crisp foreground image */}
                     <img
                       src={getReelPosterUrl(post.imageUrl)}
                       alt={post.title}
-                      className="relative w-full h-full object-cover"
-                      loading={isCurrentActive ? 'eager' : 'lazy'}
+                      className={`relative w-full h-full object-cover transition-opacity duration-300 ease-out ${
+                        loadedImages[post.id] ? 'opacity-100' : 'opacity-0'
+                      }`}
+                      style={{
+                        objectPosition: post.imagePosition
+                          ? `${post.imagePosition.x}% ${post.imagePosition.y}%`
+                          : 'center',
+                        transform: post.imageScale ? `scale(${post.imageScale})` : undefined,
+                        transformOrigin: post.imagePosition
+                          ? `${post.imagePosition.x}% ${post.imagePosition.y}%`
+                          : 'center',
+                      }}
+                      loading={Math.abs(index - activeIndex) <= 2 ? 'eager' : 'lazy'}
                       decoding="async"
+                      onLoad={() =>
+                        setLoadedImages((prev) => (prev[post.id] ? prev : { ...prev, [post.id]: true }))
+                      }
                     />
                   </div>
                 )}
@@ -693,7 +749,7 @@ export const ReelFeedView: React.FC<ReelFeedViewProps> = ({
                       src={getAvatarUrl(post.businessLogo || post.imageUrl)}
                       alt={post.businessName}
                       className="w-full h-full object-cover group-hover:scale-110 transition duration-300"
-                      loading="lazy"
+                      loading={Math.abs(index - activeIndex) <= 2 ? 'eager' : 'lazy'}
                       decoding="async"
                     />
                   </div>
