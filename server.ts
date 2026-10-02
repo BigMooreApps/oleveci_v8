@@ -8,7 +8,7 @@ import { Post, Business } from './src/types';
 import { renderPostCardImage } from './server/cardRenderer';
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 app.use(express.json({ limit: '10mb' }));
 
@@ -499,9 +499,23 @@ async function startServer() {
     }
   });
 
-  app.listen(PORT, '0.0.0.0', () => {
+  const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`OleVeci Server running on http://0.0.0.0:${PORT}`);
   });
+
+  // Bind to port 80 as well if PORT is not 80 to guarantee compatibility with Easypanel/Traefik proxies
+  if (PORT !== 80) {
+    try {
+      const altServer = app.listen(80, '0.0.0.0', () => {
+        console.log('OleVeci Server also listening on http://0.0.0.0:80');
+      });
+      altServer.on('error', () => {
+        // Port 80 unavailable or restricted in development - safely ignore
+      });
+    } catch {
+      // Ignored
+    }
+  }
 }
 
 startServer();
